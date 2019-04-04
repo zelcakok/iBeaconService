@@ -6,6 +6,7 @@ import android.support.design.button.MaterialButton;
 import android.support.design.widget.FloatingActionButton;
 import android.util.Log;
 import android.view.View;
+import android.widget.TextView;
 
 public class MainActivity extends Activity implements View.OnClickListener {
     private static final String TAG = "[MAIN]";
@@ -15,6 +16,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
     private FloatingActionButton fab;
     private MaterialButton btnGetMeasureResult;
+
+    private TextView txtScanMode;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,6 +41,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
         btnGetMeasureResult = findViewById(R.id.btnGetMeasureResult);
         btnGetMeasureResult.setOnClickListener(this);
         btnGetMeasureResult.setEnabled(false);
+
+        txtScanMode = findViewById(R.id.txtScanMode);
+        txtScanMode.setOnClickListener(this);
     }
 
     @Override
@@ -65,6 +71,16 @@ public class MainActivity extends Activity implements View.OnClickListener {
         } else if (v == btnGetMeasureResult) {
             VectorDoc doc = bleService.getVectorDoc();
             Log.i(TAG, "DOC: " + doc);
+        } else if(v == txtScanMode) {
+            if (bleService.getScanMode() == BLEService.SCAN_MODE.REGULAR) {
+                fab.setBackgroundColor(getResources().getColor(R.color.colorAccent));
+                bleService.setScanMode(BLEService.SCAN_MODE.INTENSIVE);
+                txtScanMode.setText("Intensive");
+            } else {
+                fab.setBackgroundColor(getResources().getColor(R.color.colorPrimary));
+                bleService.setScanMode(BLEService.SCAN_MODE.REGULAR);
+                txtScanMode.setText("Regular");
+            }
         }
     }
 }

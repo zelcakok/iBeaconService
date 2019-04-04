@@ -16,6 +16,16 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 public class BLEService extends Service {
+    public enum SCAN_MODE {
+        REGULAR(1000 * 10), INTENSIVE(1000 * 3);
+
+        long interval;
+
+        SCAN_MODE(long interval) {
+            this.interval = interval;
+        }
+    }
+
     public enum HEALTH_STATE {
         EXCELLENT, OKAY, BAD
     }
@@ -52,7 +62,10 @@ public class BLEService extends Service {
         }
     };
 
-    private Timer timer;
+    private static Timer convergeChecker, intervalController;
+    private static boolean isConvergeCheckerStarted = false, isScheduledStopped = false;
+
+    private SCAN_MODE scanMode = SCAN_MODE.REGULAR;
 
     public BLEService() {
     }
@@ -72,8 +85,10 @@ public class BLEService extends Service {
     }
 
     private void checkConverage() {
-        timer = new Timer();
-        timer.schedule(new TimerTask() {
+        if (isConvergeCheckerStarted) return;
+        isConvergeCheckerStarted = true;
+        convergeChecker = new Timer();
+        convergeChecker.schedule(new TimerTask() {
             @Override
             public void run() {
                 double coverage = storage.getCoverage();
@@ -91,17 +106,71 @@ public class BLEService extends Service {
         if (raw != healthState) listener.change(healthState);
     }
 
-    //Services here
-    public void startScan() {
+    private void intervalControl() {
+        Log.i(TAG, "Interval control start");
+        intervalController = new Timer();
+        intervalController.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                stopScan(true);
+                Log.i(TAG, "Interval control stop scanning, isScheduledStopped: " + isScheduledStopped);
+                delayStart(scanMode.interval);
+            }
+        }, 1000 * 10);
+    }
+
+    private void delayStart(long delay) {
+        Log.i(TAG, "Delay start");
+        intervalController = new Timer();
+        intervalController.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                Log.i(TAG, "Delay start run, isScanning: " + isScanning + ", isScheduledStopped: " + isScheduledStopped);
+                if (isScanning && isScheduledStopped) {
+                    Log.i(TAG, "Delay start before scanning, isScheduledStopped: " + isScheduledStopped);
+                    startScan(true);
+                }
+            }
+        }, delay);
+    }
+
+    private void startScan(boolean isPerformedByScheduler) {
+        if (!isPerformedByScheduler && isScanning) return;
+        isScanning = true;
+        Log.i(TAG, "Scan start");
         checkConverage();
         ble.scan(scanCallback);
-        isScanning = true;
+        if (isPerformedByScheduler) isScheduledStopped = false;
+        intervalControl();
+    }
+
+    private void stopScan(boolean isPerformedByScheduler) {
+        convergeChecker.cancel();
+        ble.stopScan(scanCallback);
+        if (isPerformedByScheduler) isScheduledStopped = true;
+        else {
+            isScheduledStopped = false;
+            isScanning = false;
+        }
+        intervalController.cancel();
+        Log.i(TAG, "Scan stop");
+    }
+
+    //Services here
+    public void setScanMode(SCAN_MODE nextScanMode) {
+        this.scanMode = nextScanMode;
+    }
+
+    public SCAN_MODE getScanMode(){
+        return scanMode;
+    }
+
+    public void startScan() {
+        startScan(false);
     }
 
     public void stopScan() {
-        timer.cancel();
-        ble.stopScan(scanCallback);
-        isScanning = false;
+        stopScan(false);
     }
 
     public boolean isScanning() {
@@ -115,7 +184,7 @@ public class BLEService extends Service {
     public void setCheckCoverageInterval(long interval) {
         checkCoverageInterval = interval;
         if (isScanning) {
-            timer.cancel();
+            convergeChecker.cancel();
             checkConverage();
         }
     }
