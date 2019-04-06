@@ -8,7 +8,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
-public class MainActivity extends Activity implements View.OnClickListener {
+public class MainActivity extends Activity implements View.OnClickListener, BLEService.OnHealthStateChangeListener, BLEService.OnBLEScanListener {
     private static final String TAG = "[MAIN]";
 
     private BLEService bleService;
@@ -28,11 +28,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
             public void OnBLEServiceBind(BLEService bleService) {
                 MainActivity.this.bleService = bleService;
                 MainActivity.this.bleService.setCheckCoverageInterval(1000 * 5);
-            }
-
-            @Override
-            public void OnHealthStateChanged(BLEService.HEALTH_STATE healthState) {
-                runOnUiThread(() -> btnGetMeasureResult.setEnabled(healthState == BLEService.HEALTH_STATE.BAD ? false : true));
+                MainActivity.this.bleService.setOnHealthStateChangeListener(MainActivity.this);
+                MainActivity.this.bleService.setOnBLEScanListener(MainActivity.this);
             }
         };
         fab = findViewById(R.id.fab);
@@ -62,25 +59,40 @@ public class MainActivity extends Activity implements View.OnClickListener {
     public void onClick(View v) {
         if (v == fab) {
             if (bleService.isScanning()) {
-                fab.setImageDrawable(getResources().getDrawable(R.drawable.bluetooth_off));
                 bleService.stopScan();
+                runOnUiThread(() -> {
+                    btnGetMeasureResult.setEnabled(false);
+                    bleService.resetHealthState();
+                });
             } else {
-                fab.setImageDrawable(getResources().getDrawable(R.drawable.bluetooth));
                 bleService.startScan();
             }
         } else if (v == btnGetMeasureResult) {
             VectorDoc doc = bleService.getVectorDoc();
             Log.i(TAG, "DOC: " + doc);
-        } else if(v == txtScanMode) {
+        } else if (v == txtScanMode) {
             if (bleService.getScanMode() == BLEService.SCAN_MODE.REGULAR) {
-                fab.setBackgroundColor(getResources().getColor(R.color.colorAccent));
                 bleService.setScanMode(BLEService.SCAN_MODE.INTENSIVE);
                 txtScanMode.setText("Intensive");
             } else {
-                fab.setBackgroundColor(getResources().getColor(R.color.colorPrimary));
                 bleService.setScanMode(BLEService.SCAN_MODE.REGULAR);
                 txtScanMode.setText("Regular");
             }
         }
+    }
+
+    @Override
+    public void change(BLEService.HEALTH_STATE healthState) {
+        runOnUiThread(() -> btnGetMeasureResult.setEnabled(true));
+    }
+
+    @Override
+    public void onBLEScanStart() {
+        runOnUiThread(() -> fab.setImageDrawable(getResources().getDrawable(R.drawable.bluetooth)));
+    }
+
+    @Override
+    public void onBLEScanStop() {
+        runOnUiThread(() -> fab.setImageDrawable(getResources().getDrawable(R.drawable.bluetooth_off)));
     }
 }

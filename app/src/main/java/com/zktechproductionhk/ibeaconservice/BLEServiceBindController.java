@@ -15,8 +15,6 @@ import com.zktechproductionhk.ibeaconservice.Hardwares.Sensors;
 public abstract class BLEServiceBindController implements Permission.OnPermissionGranted {
     public abstract void OnBLEServiceBind(BLEService bleService);
 
-    public abstract void OnHealthStateChanged(BLEService.HEALTH_STATE healthState);
-
     private static final String TAG = "[BLESerBindCtler]";
 
     private Activity activity;
@@ -28,7 +26,7 @@ public abstract class BLEServiceBindController implements Permission.OnPermissio
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
             BLEService.BLEServiceBinder binder = (BLEService.BLEServiceBinder) service;
-            bleService = binder.getService(ble, (BLEService.HEALTH_STATE healthState) -> OnHealthStateChanged(healthState));
+            bleService = binder.getService(ble);
             isBound = true;
             OnBLEServiceBind(bleService);
             Log.i(TAG, "BLE Service is bound: " + isBound);

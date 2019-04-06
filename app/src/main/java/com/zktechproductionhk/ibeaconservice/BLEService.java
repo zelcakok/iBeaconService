@@ -27,11 +27,17 @@ public class BLEService extends Service {
     }
 
     public enum HEALTH_STATE {
-        EXCELLENT, OKAY, BAD
+        EXCELLENT, OKAY, BAD, INIT
     }
 
     public interface OnHealthStateChangeListener {
         void change(HEALTH_STATE healthState);
+    }
+
+    public interface OnBLEScanListener {
+        void onBLEScanStart();
+
+        void onBLEScanStop();
     }
 
     private static final String TAG = "[BLEService]";
@@ -42,7 +48,9 @@ public class BLEService extends Service {
 
     private long checkCoverageInterval = 1000 * 10;
     private HEALTH_STATE healthState = HEALTH_STATE.BAD;
-    private OnHealthStateChangeListener listener;
+    private OnHealthStateChangeListener onHealthStateChangeListener;
+
+    private OnBLEScanListener onBLEScanListener;
 
     private boolean isScanning = false;
     private Sensors ble;
@@ -76,15 +84,14 @@ public class BLEService extends Service {
     }
 
     public class BLEServiceBinder extends Binder {
-        BLEService getService(Sensors ble, OnHealthStateChangeListener listener) {
+        BLEService getService(Sensors ble) {
             BLEService.this.storage = new VectorDoc();
             BLEService.this.ble = ble;
-            BLEService.this.listener = listener;
             return BLEService.this;
         }
     }
 
-    private void checkConverage() {
+    private void checkConverge() {
         if (isConvergeCheckerStarted) return;
         isConvergeCheckerStarted = true;
         convergeChecker = new Timer();
@@ -103,7 +110,8 @@ public class BLEService extends Service {
         if (coverage > 0.8) healthState = HEALTH_STATE.EXCELLENT;
         else if (coverage > 0.4) healthState = HEALTH_STATE.OKAY;
         else healthState = HEALTH_STATE.BAD;
-        if (raw != healthState) listener.change(healthState);
+        if (raw != healthState && onHealthStateChangeListener != null)
+            onHealthStateChangeListener.change(healthState);
     }
 
     private void intervalControl() {
@@ -138,15 +146,18 @@ public class BLEService extends Service {
         if (!isPerformedByScheduler && isScanning) return;
         isScanning = true;
         Log.i(TAG, "Scan start");
-        checkConverage();
+        checkConverge();
         ble.scan(scanCallback);
+        if (onBLEScanListener != null) onBLEScanListener.onBLEScanStart();
         if (isPerformedByScheduler) isScheduledStopped = false;
         intervalControl();
     }
 
     private void stopScan(boolean isPerformedByScheduler) {
         convergeChecker.cancel();
+        isConvergeCheckerStarted = false;
         ble.stopScan(scanCallback);
+        if (onBLEScanListener != null) onBLEScanListener.onBLEScanStop();
         if (isPerformedByScheduler) isScheduledStopped = true;
         else {
             isScheduledStopped = false;
@@ -157,11 +168,23 @@ public class BLEService extends Service {
     }
 
     //Services here
+    public void resetHealthState() {
+        this.healthState = HEALTH_STATE.INIT;
+    }
+
+    public void setOnHealthStateChangeListener(OnHealthStateChangeListener listener) {
+        this.onHealthStateChangeListener = listener;
+    }
+
+    public void setOnBLEScanListener(OnBLEScanListener listener) {
+        this.onBLEScanListener = listener;
+    }
+
     public void setScanMode(SCAN_MODE nextScanMode) {
         this.scanMode = nextScanMode;
     }
 
-    public SCAN_MODE getScanMode(){
+    public SCAN_MODE getScanMode() {
         return scanMode;
     }
 
@@ -185,7 +208,7 @@ public class BLEService extends Service {
         checkCoverageInterval = interval;
         if (isScanning) {
             convergeChecker.cancel();
-            checkConverage();
+            checkConverge();
         }
     }
 
