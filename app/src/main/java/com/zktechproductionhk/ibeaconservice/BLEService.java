@@ -17,7 +17,7 @@ import java.util.TimerTask;
 
 public class BLEService extends Service {
     public enum SCAN_MODE {
-        REGULAR(1000 * 10), INTENSIVE(1000 * 3);
+        REGULAR(1000 * 10), INTENSIVE(0);
 
         long interval;
 
