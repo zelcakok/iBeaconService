@@ -63,7 +63,7 @@ public class BLEService extends Service {
                     String[] stoneInfo = stone.split("_");
                     EddyStoneRecord record = new EddyStoneRecord(stoneInfo[0], stoneInfo[1], result.getRssi());
                     storage.addRecord(record);
-                    Log.i(TAG, "Scan results: " + record);
+//                    Log.i(TAG, "Scan results: " + record);
                 }
             }
 
