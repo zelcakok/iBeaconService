@@ -35,13 +35,12 @@ public class Sensors extends Activity {
             AlertDialog.Builder builder = new AlertDialog.Builder(activity);
             builder.setTitle("Error: No Bluetooth hardware")
                     .setMessage("This device doesn't support BLE.")
-                    .setNegativeButton("Okay", null)
+                    .setNegativeButton("Okay", (dialog, which) -> activity.finish())
                     .show();
-        } else {
-            final BluetoothManager bleMgr = (BluetoothManager) activity.getSystemService(Context.BLUETOOTH_SERVICE);
-            bleAdapter = bleMgr.getAdapter();
-            checkBLE();
         }
+        final BluetoothManager bleMgr = (BluetoothManager) activity.getSystemService(Context.BLUETOOTH_SERVICE);
+        bleAdapter = bleMgr.getAdapter();
+        checkBLE();
     }
 
     boolean isBLESupported() {
@@ -49,7 +48,8 @@ public class Sensors extends Activity {
     }
 
     public void scan(ScanCallback callback) {
-        bleScanner.startScan(EddyStone.filters, EddyStone.settings, callback);
+        if (bleScanner == null) checkBLE();
+        else bleScanner.startScan(EddyStone.filters, EddyStone.settings, callback);
     }
 
     public void stopScan(ScanCallback callback) {
@@ -63,6 +63,10 @@ public class Sensors extends Activity {
         } else {
             bleScanner = bleAdapter.getBluetoothLeScanner();
         }
+    }
+
+    public boolean isBLEEnabled() {
+        return bleAdapter != null && bleAdapter.isEnabled();
     }
 
     @Override

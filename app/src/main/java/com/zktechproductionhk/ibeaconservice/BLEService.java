@@ -54,21 +54,26 @@ public class BLEService extends Service {
 
     private boolean isScanning = false;
     private Sensors ble;
-    private ScanCallback scanCallback = new ScanCallback() {
-        @Override
-        public void onScanResult(int callbackType, ScanResult result) {
-            if (result.getScanRecord().getServiceUuids() != null) {
-                String stone = EddyStone.getStone(result.getScanRecord().getBytes());
-                if (stone != null) {
-                    String[] stoneInfo = stone.split("_");
-                    EddyStoneRecord record = new EddyStoneRecord(stoneInfo[0], stoneInfo[1], result.getRssi());
-                    storage.addRecord(record);
-//                    Log.i(TAG, "Scan results: " + record);
-                }
-            }
+    private ScanCallback scanCallback = null;
 
-        }
-    };
+
+    public ScanCallback getScanCallback() {
+        return new ScanCallback() {
+            @Override
+            public void onScanResult(int callbackType, ScanResult result) {
+                if (result.getScanRecord().getServiceUuids() != null) {
+                    String stone = EddyStone.getStone(result.getScanRecord().getBytes());
+                    if (stone != null) {
+                        String[] stoneInfo = stone.split("_");
+                        EddyStoneRecord record = new EddyStoneRecord(stoneInfo[0], stoneInfo[1], result.getRssi());
+                        storage.addRecord(record);
+//                    Log.i(TAG, "Scan results: " + record);
+                    }
+                }
+
+            }
+        };
+    }
 
     private static Timer convergeChecker, intervalController;
     private static boolean isConvergeCheckerStarted = false, isScheduledStopped = false;
@@ -144,6 +149,7 @@ public class BLEService extends Service {
 
     private void startScan(boolean isPerformedByScheduler) {
         if (!isPerformedByScheduler && isScanning) return;
+        scanCallback = getScanCallback();
         isScanning = true;
         Log.i(TAG, "Scan start");
         checkConverge();
@@ -168,6 +174,10 @@ public class BLEService extends Service {
     }
 
     //Services here
+    public boolean isBLEEnabled() {
+        return ble.isBLEEnabled();
+    }
+
     public void resetHealthState() {
         this.healthState = HEALTH_STATE.INIT;
     }

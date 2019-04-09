@@ -30,6 +30,7 @@ public class MainActivity extends Activity implements View.OnClickListener, BLES
                 MainActivity.this.bleService.setCheckCoverageInterval(1000 * 5);
                 MainActivity.this.bleService.setOnHealthStateChangeListener(MainActivity.this);
                 MainActivity.this.bleService.setOnBLEScanListener(MainActivity.this);
+                MainActivity.this.bleService.startScan();
             }
         };
         fab = findViewById(R.id.fab);

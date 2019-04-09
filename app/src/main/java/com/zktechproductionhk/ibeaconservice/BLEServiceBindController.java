@@ -25,11 +25,19 @@ public abstract class BLEServiceBindController implements Permission.OnPermissio
     private ServiceConnection serviceConn = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
-            BLEService.BLEServiceBinder binder = (BLEService.BLEServiceBinder) service;
-            bleService = binder.getService(ble);
-            isBound = true;
-            OnBLEServiceBind(bleService);
-            Log.i(TAG, "BLE Service is bound: " + isBound);
+            if (ble.isBLEEnabled()) {
+                BLEService.BLEServiceBinder binder = (BLEService.BLEServiceBinder) service;
+                bleService = binder.getService(ble);
+                isBound = true;
+                OnBLEServiceBind(bleService);
+                Log.i(TAG, "BLE Service is bound: " + isBound);
+            } else {
+                AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+                builder.setTitle("Error: Bluetooth isn't enabled")
+                        .setMessage("Please enable Bluetooth and restart the application.")
+                        .setNegativeButton("Okay", (dialog, which) -> activity.finish())
+                        .show();
+            }
         }
 
         @Override
@@ -43,9 +51,7 @@ public abstract class BLEServiceBindController implements Permission.OnPermissio
 
     public BLEServiceBindController(Activity activity) {
         this.activity = activity;
-
         ble = Sensors.getInstance(activity);
-
         if (!Permission.isAllGranted(activity))
             Permission.getInstance().request(activity, this);
         else isPermissionGranted = true;
