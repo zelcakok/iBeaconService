@@ -20,7 +20,7 @@ public abstract class BLEServiceBindController implements Permission.OnPermissio
     private Activity activity;
     private boolean isPermissionGranted = false;
 
-    private boolean isBound = false;
+    public boolean isBound = false;
     private BLEService bleService;
     private ServiceConnection serviceConn = new ServiceConnection() {
         @Override
