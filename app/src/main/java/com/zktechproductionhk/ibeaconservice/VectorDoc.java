@@ -3,7 +3,9 @@ package com.zktechproductionhk.ibeaconservice;
 import com.zktechproductionhk.ibeaconservice.Hardwares.EddyStoneSpec.EddyStone;
 import com.zktechproductionhk.ibeaconservice.Hardwares.EddyStoneSpec.EddyStoneRecord;
 
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.Set;
 
 
 public class VectorDoc {
@@ -53,6 +55,14 @@ public class VectorDoc {
         for (Double val : doc.values())
             coverage += (val == 0 ? 0 : 1);
         return coverage / EddyStone.emptyRecord.size();
+    }
+
+    public Collection<Double> values() {
+        return doc.values();
+    }
+
+    public Set<String> keys() {
+        return doc.keySet();
     }
 
     @Override
