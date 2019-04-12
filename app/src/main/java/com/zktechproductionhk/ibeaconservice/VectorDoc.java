@@ -10,6 +10,7 @@ import java.util.Set;
 
 public class VectorDoc {
     private HashMap<String, Double> doc;
+    private int accumulate = 0;
 
     public VectorDoc() {
         this.doc = (HashMap<String, Double>) EddyStone.emptyRecord.clone();
@@ -63,6 +64,25 @@ public class VectorDoc {
 
     public Set<String> keys() {
         return doc.keySet();
+    }
+
+    public VectorDoc accumulate(VectorDoc vectorDoc) {
+        for (String key : doc.keySet())
+            doc.put(key, doc.get(key) + vectorDoc.doc.get(key));
+        accumulate++;
+        return this;
+    }
+
+    public VectorDoc average() {
+        VectorDoc result = null;
+        try {
+            result = clone();
+            for (String key : result.doc.keySet())
+                result.doc.put(key, result.doc.get(key) / accumulate);
+        } catch (CloneNotSupportedException e) {
+            e.printStackTrace();
+        }
+        return result;
     }
 
     @Override
